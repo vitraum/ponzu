@@ -1,0 +1,6 @@
+FROM scratch
+WORKDIR /app
+EXPOSE 8080
+ENTRYPOINT ["/app/ponzu-server", "run"]
+COPY ponzu-server-docker /app/ponzu-server
+COPY cmd/ponzu/vendor/github.com/ponzu-cms/ponzu/system/ /app/cmd/ponzu/vendor/github.com/ponzu-cms/ponzu/system/

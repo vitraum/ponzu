@@ -1,9 +1,6 @@
 package main
 
 import (
-	"errors"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -11,7 +8,19 @@ import (
 )
 
 func buildPonzuServer() error {
-	// copy all ./content files to internal vendor directory
+	err := copyContentAndAddons()
+	if err != nil {
+		return err
+	}
+
+	// execute go build -o ponzu-cms cmd/ponzu/*.go
+	cmdPackageName := strings.Join([]string{".", "cmd", "ponzu"}, "/")
+	buildOptions := []string{"build", "-o", buildOutputName(), cmdPackageName}
+	return execAndWait(gocmd, buildOptions...)
+}
+
+// copyContentAndAddons copies all ./content and addon files to internal vendor directory
+func copyContentAndAddons() error {
 	src := "content"
 	dst := filepath.Join("cmd", "ponzu", "vendor", "github.com", "ponzu-cms", "ponzu", "content")
 	err := emptyDir(dst)
@@ -27,29 +36,7 @@ func buildPonzuServer() error {
 	src = "addons"
 	dst = filepath.Join("cmd", "ponzu", "vendor")
 	err = copyFilesWarnConflicts(src, dst, nil)
-	if err != nil {
-		return err
-	}
-
-	// execute go build -o ponzu-cms cmd/ponzu/*.go
-	cmdPackageName := strings.Join([]string{".", "cmd", "ponzu"}, "/")
-	buildOptions := []string{"build", "-o", buildOutputName(), cmdPackageName}
-	build := exec.Command(gocmd, buildOptions...)
-	build.Stderr = os.Stderr
-	build.Stdout = os.Stdout
-
-	err = build.Start()
-	if err != nil {
-		return errors.New("Ponzu build step failed. Please try again. " + "\n" + err.Error())
-
-	}
-	err = build.Wait()
-	if err != nil {
-		return errors.New("Ponzu build step failed. Please try again. " + "\n" + err.Error())
-
-	}
-
-	return nil
+	return err
 }
 
 var buildCmd = &cobra.Command{
